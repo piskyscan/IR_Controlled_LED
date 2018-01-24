@@ -372,7 +372,7 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 		 {
 			 for (y = 0; y < height; y++)
 			 {
-				 matrix[y * width + x] = RGB_VAL(MAX(RED(matrix[y * width + x])-step,0),GREEN(matrix[y * width + x]),BLUE(matrix[y * width + x]));
+				 matrix[y * width + x] = RGB_VAL(MAX((int)(RED(matrix[y * width + x]))-step,0),GREEN(matrix[y * width + x]),BLUE(matrix[y * width + x]));
 			 }
 		 }
 		 break;
@@ -416,7 +416,7 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 		 {
 			 for (y = 0; y < height; y++)
 			 {
-				 matrix[y * width + x] = RGB_VAL(RED(matrix[y * width + x]),MAX(GREEN(matrix[y * width + x])-step,0),BLUE(matrix[y * width + x]));
+				 matrix[y * width + x] = RGB_VAL(RED(matrix[y * width + x]),MAX((int)(GREEN(matrix[y * width + x]))-step,0),BLUE(matrix[y * width + x]));
 			 }
 		 }
 		 break;
@@ -446,7 +446,7 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 		 {
 			 for (y = 0; y < height; y++)
 			 {
-				 matrix[y * width + x] = RGB_VAL(RED(matrix[y * width + x]),GREEN(matrix[y * width + x]),MAX(BLUE(matrix[y * width + x])-step,0));
+				 matrix[y * width + x] = RGB_VAL(RED(matrix[y * width + x]),GREEN(matrix[y * width + x]),MAX((int)(BLUE(matrix[y * width + x]))-step,0));
 			 }
 		 }
 		 break;
