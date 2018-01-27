@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -124,7 +125,9 @@ ws2811_led_t *matrix;
 
 static uint8_t running = 1;
 
-void matrix_render(void)
+static int (*modifier)(ws2811_led_t * , ws2811_led_t *, void *) = NULL;
+
+void matrix_render(ws2811_led_t *used_matrix)
 {
     int x, y;
 
@@ -132,7 +135,7 @@ void matrix_render(void)
     {
         for (y = 0; y < height; y++)
         {
-            ledstring.channel[0].leds[(y * width) + x] = matrix[y * width + x];
+            ledstring.channel[0].leds[(y * width) + x] = used_matrix[y * width + x];
         }
     }
 }
@@ -333,6 +336,37 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 	}
 }
 
+void addColour(int r, int g, int b)
+{
+int x;
+int y;
+
+	 for (x = 0; x < width; x++)
+	 {
+		 for (y = 0; y < height; y++)
+		 {
+			 matrix[y * width + x] = RGB_VAL(MAX(MIN(RED(matrix[y * width + x])+r,255),0),MAX(MIN(GREEN(matrix[y * width + x])+g,255),0),MAX(MIN(BLUE(matrix[y * width + x])+b,255),0));
+		 }
+	 }
+}
+
+void sineWave(int num)
+{
+int x;
+int y;
+int i = 0;
+double val;
+
+	 for (x = 0; x < width; x++)
+	 {
+		 for (y = 0; y < height; y++)
+		 {
+			 val = (sin(i*2*3.1415/num)+1)/2;
+			 matrix[y * width + x] = RGB_VAL(MAX(MIN(RED(matrix[y * width + x])*val,255),0),MAX(MIN(GREEN(matrix[y * width + x])*val,255),0),MAX(MIN(BLUE(matrix[y * width + x])*val,255),0));
+		 }
+	 }
+}
+
 
  void IrReceive(int address, int value, uint32_t tick, bool isRepeat, void * userData)
  {
@@ -357,27 +391,18 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 		 break;
 
 	 case 0x00bb44:
-		 for (x = 0; x < width; x++)
-		 {
-			 for (y = 0; y < height; y++)
-			 {
-				 matrix[y * width + x] = RGB_VAL(MIN(RED(matrix[y * width + x])+step,255),GREEN(matrix[y * width + x]),BLUE(matrix[y * width + x]));
-			 }
-		 }
+		 addColour(step,0,0);
 		 break;
 
 
 	 case 0x00f807:
-		 for (x = 0; x < width; x++)
-		 {
-			 for (y = 0; y < height; y++)
-			 {
-				 matrix[y * width + x] = RGB_VAL(MAX((int)(RED(matrix[y * width + x]))-step,0),GREEN(matrix[y * width + x]),BLUE(matrix[y * width + x]));
-			 }
-		 }
+		 addColour(-step,0,0);
 		 break;
 
 	 case 0x00e916:
+		 sineWave(4);
+		 break;
+
 	 case 0x00f30c:
 	 case 0x00f708:
 	 case 0x00bd42:
@@ -401,24 +426,11 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 
 
 	 case 0x00bf40:
-
-		 for (x = 0; x < width; x++)
-		 {
-			 for (y = 0; y < height; y++)
-			 {
-				 matrix[y * width + x] = RGB_VAL(RED(matrix[y * width + x]),MIN(GREEN(matrix[y * width + x])+step,255),BLUE(matrix[y * width + x]));
-			 }
-		 }
+		 addColour(0,step,0);
 		 break;
 
 	 case 0x00ea15:
-		 for (x = 0; x < width; x++)
-		 {
-			 for (y = 0; y < height; y++)
-			 {
-				 matrix[y * width + x] = RGB_VAL(RED(matrix[y * width + x]),MAX((int)(GREEN(matrix[y * width + x]))-step,0),BLUE(matrix[y * width + x]));
-			 }
-		 }
+		 addColour(0,-step,0);
 		 break;
 
 	 case 0x00e619:
@@ -432,23 +444,11 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 		 break;
 
 	 case 0x00bc43:
-		 for (x = 0; x < width; x++)
-		 {
-			 for (y = 0; y < height; y++)
-			 {
-				 matrix[y * width + x] = RGB_VAL(RED(matrix[y * width + x]),GREEN(matrix[y * width + x]),MIN(BLUE(matrix[y * width + x])+step,255));
-			 }
-		 }
+		 addColour(0,0,step);
 		 break;
 
 	 case 0x00f609:
-		 for (x = 0; x < width; x++)
-		 {
-			 for (y = 0; y < height; y++)
-			 {
-				 matrix[y * width + x] = RGB_VAL(RED(matrix[y * width + x]),GREEN(matrix[y * width + x]),MAX((int)(BLUE(matrix[y * width + x]))-step,0));
-			 }
-		 }
+		 addColour(0,0,-step);
 		 break;
 
 	 case 0x00f20d:
@@ -462,16 +462,20 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
  }
 
 
+
 int main(int argc, char *argv[])
 {
     ws2811_return_t ret;
+    int i = 0;
     int irPort = IR_PORT;
+    ws2811_led_t *modifiedMatrix;
 
     sprintf(VERSION, "%d.%d.%d", 0, 1, 0);
 
     parseargs(argc, argv, &ledstring);
 
     matrix = malloc(sizeof(ws2811_led_t) * width * height);
+    modifiedMatrix = malloc(sizeof(ws2811_led_t) * width * height);
 
     matrix_clear();
 
@@ -487,7 +491,7 @@ int main(int argc, char *argv[])
 
     while (running)
     {
-        matrix_render();
+        matrix_render(matrix);
 
         if ((ret = ws2811_render(&ledstring)) != WS2811_SUCCESS)
         {
