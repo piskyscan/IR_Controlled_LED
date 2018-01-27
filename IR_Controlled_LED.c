@@ -340,12 +340,24 @@ void addColour(int r, int g, int b)
 {
 int x;
 int y;
+int red;
+int blue;
+int green;
+
 
 	 for (x = 0; x < width; x++)
 	 {
 		 for (y = 0; y < height; y++)
 		 {
-			 matrix[y * width + x] = RGB_VAL(MAX(MIN(RED(matrix[y * width + x])+r,255),0),MAX(MIN(GREEN(matrix[y * width + x])+g,255),0),MAX(MIN(BLUE(matrix[y * width + x])+b,255),0));
+			 red = RED(matrix[y * width + x]);
+			 green = GREEN(matrix[y * width + x]);
+			 blue = BLUE(matrix[y * width + x]);
+
+			 red = MIN(MAX(red + r,0),255);
+			 blue = MIN(MAX(blue + b,0),255);
+			 green = MIN(MAX(green + g,0),255);
+
+			 matrix[y * width + x] = RGB_VAL(red, green, blue);
 		 }
 	 }
 }
@@ -363,9 +375,51 @@ double val;
 		 {
 			 val = (sin(i*2*3.1415/num)+1)/2;
 			 matrix[y * width + x] = RGB_VAL(MAX(MIN((int)(RED(matrix[y * width + x])*val),255),0),MAX(MIN((int)(GREEN(matrix[y * width + x])*val),255),0),MAX(MIN((int)(BLUE(matrix[y * width + x])*val),255),0));
+			 i++;
 		 }
 	 }
 }
+
+int modulo(int x,int N){
+    return (x % N + N) %N;
+}
+
+int rotateStart = 0;
+int rotateNum = 4;
+int rotateDirection = 1;
+
+int rotate(ws2811_led_t * in, ws2811_led_t * out, void *)
+{
+	int x;
+	int y;
+	int i = 0;
+	double val;
+	int modx;
+
+	for (x = 0; x < width; x++)
+	{
+		modx = modulo(x + rotateStart/rotateNum * rotateDirection) , width);
+
+		for (y = 0; y < height; y++)
+		{
+			out[y * width + x] = in[y * width + modx];
+		}
+	}
+
+	rotateStart++;
+
+	return 0;
+}
+
+void startRotate(int clockwise)
+{
+
+modifier = rotate;
+
+int rotateDirection = clockwise ? 1:-1;
+
+}
+
 
 
  void IrReceive(int address, int value, uint32_t tick, bool isRepeat, void * userData)
@@ -400,7 +454,10 @@ double val;
 		 break;
 
 	 case 0x00e916:
-		 sineWave(4);
+		 if (!isRepeat)
+		 {
+			 sineWave(4);
+		 }
 		 break;
 
 	 case 0x00f30c:
@@ -423,8 +480,6 @@ double val;
 		 }
 		 break;
 
-
-
 	 case 0x00bf40:
 		 addColour(0,step,0);
 		 break;
@@ -434,6 +489,8 @@ double val;
 		 break;
 
 	 case 0x00e619:
+		 startRotate(1==1);
+		 break;
 	 case 0x00e718:
 	 case 0x00e31c:
 	 case 0x00ad52:
@@ -452,6 +509,9 @@ double val;
 		 break;
 
 	 case 0x00f20d:
+		 startRotate(1==0);
+		 break;
+
 	 case 0x00a15e:
 	 case 0x00a55a:
 	 case 0x00b54a:
@@ -491,7 +551,15 @@ int main(int argc, char *argv[])
 
     while (running)
     {
-        matrix_render(matrix);
+    	if (modifier == NULL)
+    	{
+    		matrix_render(matrix);
+    	}
+    	else
+    	{
+    		modifier(matrix, modifiedMatrix,NULL);
+    		matrix_render(modifiedMatrix);
+    	}
 
         if ((ret = ws2811_render(&ledstring)) != WS2811_SUCCESS)
         {
@@ -499,8 +567,8 @@ int main(int argc, char *argv[])
             break;
         }
 
-        // 50 frames /sec
-        usleep(1000000 / 50);
+        // 15 frames /sec
+        usleep(1000000 / 15);
     }
 
     if (clear_on_exit)
