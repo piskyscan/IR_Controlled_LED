@@ -362,7 +362,7 @@ double val;
 		 for (y = 0; y < height; y++)
 		 {
 			 val = (sin(i*2*3.1415/num)+1)/2;
-			 matrix[y * width + x] = RGB_VAL(MAX(MIN(RED(matrix[y * width + x])*val,255),0),MAX(MIN(GREEN(matrix[y * width + x])*val,255),0),MAX(MIN(BLUE(matrix[y * width + x])*val,255),0));
+			 matrix[y * width + x] = RGB_VAL(MAX(MIN((int)(RED(matrix[y * width + x])*val),255),0),MAX(MIN((int)(GREEN(matrix[y * width + x])*val),255),0),MAX(MIN((int)(BLUE(matrix[y * width + x])*val),255),0));
 		 }
 	 }
 }
@@ -506,7 +506,7 @@ int main(int argc, char *argv[])
     if (clear_on_exit)
     {
 	matrix_clear();
-	matrix_render();
+	matrix_render(matrix);
 	ws2811_render(&ledstring);
     }
 
