@@ -394,11 +394,6 @@ int colourSwipeStart = 0;
 int colourSwipeRotateNum = 4;
 int rotateDirection = 1;
 
-void startSwipe(int clockwise)
-{
-modifier = swipe;
-rotateDirection = clockwise ? 1:-1;
-}
 
 int swipe(ws2811_led_t * in, ws2811_led_t * out, void *v)
 {
@@ -430,17 +425,17 @@ int swipe(ws2811_led_t * in, ws2811_led_t * out, void *v)
 	return 0;
 }
 
+void startSwipe(int clockwise)
+{
+modifier = swipe;
+rotateDirection = clockwise ? 1:-1;
+}
 
 
 int rotateStart = 0;
 int rotateNum = 4;
 int rotateDirection = 1;
 
-void startRotate(int clockwise)
-{
-modifier = rotate;
-rotateDirection = clockwise ? 1:-1;
-}
 
 int rotate(ws2811_led_t * in, ws2811_led_t * out, void *v)
 {
@@ -465,14 +460,16 @@ int rotate(ws2811_led_t * in, ws2811_led_t * out, void *v)
 	return 0;
 }
 
+void startRotate(int clockwise)
+{
+modifier = rotate;
+rotateDirection = clockwise ? 1:-1;
+}
+
+
 int throbStart = 0;
 int throbVal  = 16;
 
-void startThrob(int time)
-{
-modifier = throb;
-throbVal  = time;
-}
 
 int throb(ws2811_led_t * in, ws2811_led_t * out, void *v)
 {
@@ -497,10 +494,11 @@ int throb(ws2811_led_t * in, ws2811_led_t * out, void *v)
 	return 0;
 }
 
-
-
-
-
+void startThrob(int time)
+{
+modifier = throb;
+throbVal  = time;
+}
 
 
  void IrReceive(int address, int value, uint32_t tick, bool isRepeat, void * userData)
