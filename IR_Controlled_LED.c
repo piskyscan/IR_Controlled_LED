@@ -393,7 +393,7 @@ int rotateStart = 0;
 int rotateNum = 4;
 int rotateDirection = 1;
 
-int rotate(ws2811_led_t * in, ws2811_led_t * out, void *)
+int rotate(ws2811_led_t * in, ws2811_led_t * out, void *v)
 {
 	int x;
 	int y;
@@ -420,7 +420,7 @@ int throbStart = 0;
 int throbVal  = 16;
 
 
-int throb(ws2811_led_t * in, ws2811_led_t * out, void *)
+int throb(ws2811_led_t * in, ws2811_led_t * out, void *v)
 {
 	int x;
 	int y;
@@ -453,11 +453,8 @@ throbVal  = time;
 
 void startRotate(int clockwise)
 {
-
 modifier = rotate;
-
 rotateDirection = clockwise ? 1:-1;
-
 }
 
 
