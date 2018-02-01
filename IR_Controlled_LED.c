@@ -392,7 +392,7 @@ int modulo(int x,int N){
 
 int colourSwipeStart = 0;
 int colourSwipeRotateNum = 4;
-int rotateDirection = 1;
+int csrotateDirection = 1;
 
 
 int swipe(ws2811_led_t * in, ws2811_led_t * out, void *v)
@@ -405,7 +405,7 @@ int swipe(ws2811_led_t * in, ws2811_led_t * out, void *v)
 
 	for (x = 0; x < width; x++)
 	{
-		modx = modulo(x + colourSwipeStart/rotateNum  , width);
+		modx = modulo(x + colourSwipeStart/colourSwipeRotateNum, width);
 
 		for (y = 0; y < height; y++)
 		{
@@ -420,7 +420,7 @@ int swipe(ws2811_led_t * in, ws2811_led_t * out, void *v)
 		}
 	}
 
-	rotateStart += rotateDirection;
+	colourSwipeStart += csrotateDirection;
 
 	return 0;
 }
@@ -428,7 +428,7 @@ int swipe(ws2811_led_t * in, ws2811_led_t * out, void *v)
 void startSwipe(int clockwise)
 {
 modifier = swipe;
-rotateDirection = clockwise ? 1:-1;
+csrotateDirection = clockwise ? 1:-1;
 }
 
 
@@ -477,7 +477,7 @@ int throb(ws2811_led_t * in, ws2811_led_t * out, void *v)
 	int y;
 	int i = 0;
 	double val;
-	double val;
+
 
 	val = sin(throbStart*2*3.1415/throbVal)+1;
 
