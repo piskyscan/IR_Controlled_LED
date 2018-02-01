@@ -389,9 +389,58 @@ int modulo(int x,int N){
     return (x % N + N) %N;
 }
 
+
+int colourSwipeStart = 0;
+int colourSwipeRotateNum = 4;
+int rotateDirection = 1;
+
+void startSwipe(int clockwise)
+{
+modifier = swipe;
+rotateDirection = clockwise ? 1:-1;
+}
+
+int swipe(ws2811_led_t * in, ws2811_led_t * out, void *v)
+{
+	int x;
+	int y;
+	int i = 0;
+	double val;
+	int modx;
+
+	for (x = 0; x < width; x++)
+	{
+		modx = modulo(x + colourSwipeStart/rotateNum  , width);
+
+		for (y = 0; y < height; y++)
+		{
+			if (x < modx)
+			{
+				out[y * width + x] = RGB_VAL(MAX(MIN((int)(BLUE(matrix[0])),255),0),MAX(MIN((int)(RED(matrix[0])),255),0),MAX(MIN((int)(GREEN(matrix[0])),255),0));
+			}
+			else
+			{
+				out[y * width + x] = in[y * width + x];
+			}
+		}
+	}
+
+	rotateStart += rotateDirection;
+
+	return 0;
+}
+
+
+
 int rotateStart = 0;
 int rotateNum = 4;
 int rotateDirection = 1;
+
+void startRotate(int clockwise)
+{
+modifier = rotate;
+rotateDirection = clockwise ? 1:-1;
+}
 
 int rotate(ws2811_led_t * in, ws2811_led_t * out, void *v)
 {
@@ -419,6 +468,11 @@ int rotate(ws2811_led_t * in, ws2811_led_t * out, void *v)
 int throbStart = 0;
 int throbVal  = 16;
 
+void startThrob(int time)
+{
+modifier = throb;
+throbVal  = time;
+}
 
 int throb(ws2811_led_t * in, ws2811_led_t * out, void *v)
 {
@@ -426,15 +480,15 @@ int throb(ws2811_led_t * in, ws2811_led_t * out, void *v)
 	int y;
 	int i = 0;
 	double val;
-	double mult;
+	double val;
 
-	mult = sin(throbStart*2*3.1415/throbVal)+1;
+	val = sin(throbStart*2*3.1415/throbVal)+1;
 
 	for (x = 0; x < width; x++)
 	{
 		for (y = 0; y < height; y++)
 		{
-			out[y * width + x] = (int)(mult * in[y * width + x]);
+			out[y * width + x] = RGB_VAL(MAX(MIN((int)(RED(matrix[y * width + x])*val),255),0),MAX(MIN((int)(GREEN(matrix[y * width + x])*val),255),0),MAX(MIN((int)(BLUE(matrix[y * width + x])*val),255),0));
 		}
 	}
 
@@ -443,19 +497,9 @@ int throb(ws2811_led_t * in, ws2811_led_t * out, void *v)
 	return 0;
 }
 
-void startThrob(int time)
-{
-modifier = throb;
-throbVal  = time;
-}
 
 
 
-void startRotate(int clockwise)
-{
-modifier = rotate;
-rotateDirection = clockwise ? 1:-1;
-}
 
 
 
@@ -506,7 +550,11 @@ rotateDirection = clockwise ? 1:-1;
 		 }
 
 	 case 0x00f708:
+		 startSwipe(1==1);
+		 break;
+
 	 case 0x00bd42:
+		 startSwipe(1==0);
 		 break;
 
 		// column2
@@ -589,7 +637,7 @@ int main(int argc, char *argv[])
 
     initialise_ir_receiver(irPort, IrReceive, NULL, NULL);
 
-    sem_init(&semaphore, 0, 0);
+    sem_init(&semaphore, 0, 1);
 
     if ((ret = ws2811_init(&ledstring)) != WS2811_SUCCESS)
     {
