@@ -41,6 +41,7 @@
 #include <stdarg.h>
 #include <getopt.h>
 #include <stdbool.h>
+#include <semaphore.h>
 #include <carmp3lib.h>
 
 static char VERSION[] = "XX.YY.ZZ";
@@ -53,6 +54,9 @@ static char VERSION[] = "XX.YY.ZZ";
 //#include "version.h"
 
 #include <rpi_ws281x/ws2811.h>
+
+// int sem_init (sem_t *semaphore, int pshared, unsigned int arg);
+sem_t semaphore;
 
 
 #define ARRAY_SIZE(stuff)       (sizeof(stuff) / sizeof(stuff[0]))
@@ -77,6 +81,7 @@ static char VERSION[] = "XX.YY.ZZ";
 #define HEIGHT                  1
 #define LED_COUNT               (WIDTH * HEIGHT)
 #define IR_PORT 				17
+
 int width = WIDTH;
 int height = HEIGHT;
 int led_count = LED_COUNT;
@@ -398,7 +403,7 @@ int rotate(ws2811_led_t * in, ws2811_led_t * out, void *)
 
 	for (x = 0; x < width; x++)
 	{
-		modx = modulo(x + rotateStart/rotateNum * rotateDirection) , width);
+		modx = modulo(x + rotateStart/rotateNum  , width);
 
 		for (y = 0; y < height; y++)
 		{
@@ -406,17 +411,52 @@ int rotate(ws2811_led_t * in, ws2811_led_t * out, void *)
 		}
 	}
 
-	rotateStart++;
+	rotateStart += rotateDirection;
 
 	return 0;
 }
+
+int throbStart = 0;
+int throbVal  = 16;
+
+
+int throb(ws2811_led_t * in, ws2811_led_t * out, void *)
+{
+	int x;
+	int y;
+	int i = 0;
+	double val;
+	double mult;
+
+	mult = sin(throbStart*2*3.1415/throbVal)+1;
+
+	for (x = 0; x < width; x++)
+	{
+		for (y = 0; y < height; y++)
+		{
+			out[y * width + x] = (int)(mult * in[y * width + x]);
+		}
+	}
+
+	throbStart += 1;
+
+	return 0;
+}
+
+void startThrob(int time)
+{
+modifier = throb;
+throbVal  = time;
+}
+
+
 
 void startRotate(int clockwise)
 {
 
 modifier = rotate;
 
-int rotateDirection = clockwise ? 1:-1;
+rotateDirection = clockwise ? 1:-1;
 
 }
 
@@ -427,6 +467,8 @@ int rotateDirection = clockwise ? 1:-1;
 	 int x;
 	 int y;
 	 int step = 2;
+
+	 sem_wait(&semaphore);
 
 	 switch (value)
 	 {
@@ -461,6 +503,11 @@ int rotateDirection = clockwise ? 1:-1;
 		 break;
 
 	 case 0x00f30c:
+		 if (!isRepeat)
+		 {
+			 startThrob(16);
+		 }
+
 	 case 0x00f708:
 	 case 0x00bd42:
 		 break;
@@ -519,6 +566,8 @@ int rotateDirection = clockwise ? 1:-1;
 
 	 }
 
+ 	sem_post (&semaphore);
+
  }
 
 
@@ -543,6 +592,8 @@ int main(int argc, char *argv[])
 
     initialise_ir_receiver(irPort, IrReceive, NULL, NULL);
 
+    sem_init(&semaphore, 0, 0);
+
     if ((ret = ws2811_init(&ledstring)) != WS2811_SUCCESS)
     {
         fprintf(stderr, "ws2811_init failed: %s\n", ws2811_get_return_t_str(ret));
@@ -551,6 +602,9 @@ int main(int argc, char *argv[])
 
     while (running)
     {
+
+    	sem_wait(&semaphore);
+
     	if (modifier == NULL)
     	{
     		matrix_render(matrix);
@@ -566,6 +620,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "ws2811_render failed: %s\n", ws2811_get_return_t_str(ret));
             break;
         }
+    	sem_post (&semaphore);
 
         // 15 frames /sec
         usleep(1000000 / 15);
