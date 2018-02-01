@@ -546,6 +546,7 @@ throbVal  = time;
 		 {
 			 startThrob(16);
 		 }
+		break;
 
 	 case 0x00f708:
 		 startSwipe(1==1);
