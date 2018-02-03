@@ -659,9 +659,14 @@ int main(int argc, char *argv[])
     		matrix_render(modifiedMatrix);
     	}
 
-        if ((ret = ws2811_render(&ledstring)) != WS2811_SUCCESS)
+    	local_irq_disable();
+    	ret = ws2811_render(&ledstring);
+    	local_irq_enable();
+
+        if (ret != WS2811_SUCCESS)
         {
             fprintf(stderr, "ws2811_render failed: %s\n", ws2811_get_return_t_str(ret));
+            local_irq_disable();
             break;
         }
     	sem_post (&semaphore);
