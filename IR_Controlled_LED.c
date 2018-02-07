@@ -1,5 +1,5 @@
 /*
- * Copyright notice from original work
+\ * Copyright notice from original work
  *
  ** Copyright (c) 2014 Jeremy Garff <jer @ jers.net>
  *
@@ -33,6 +33,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -57,7 +58,7 @@ static char VERSION[] = "XX.YY.ZZ";
 
 // int sem_init (sem_t *semaphore, int pshared, unsigned int arg);
 sem_t semaphore;
-
+#define PI 3.141592654
 
 #define ARRAY_SIZE(stuff)       (sizeof(stuff) / sizeof(stuff[0]))
 
@@ -77,7 +78,7 @@ sem_t semaphore;
 #define DMA                     10
 #define STRIP_TYPE              WS2811_STRIP_GBR
 
-#define WIDTH                   16
+#define WIDTH                   237
 #define HEIGHT                  1
 #define LED_COUNT               (WIDTH * HEIGHT)
 #define IR_PORT 				17
@@ -341,6 +342,12 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 	}
 }
 
+void setLed(ws2811_led_t * in,int offset, int red, int green, int blue)
+{
+	in[offset] = RGB_VAL(MAX(MIN((int)(BLUE(blue)),255),0),MAX(MIN((int)(RED(red)),255),0),MAX(MIN((int)(GREEN(green)),255),0));
+}
+
+
 void addColour(int r, int g, int b)
 {
 int x;
@@ -467,6 +474,48 @@ rotateDirection = clockwise ? 1:-1;
 }
 
 
+
+int rotateRandom(ws2811_led_t * in, ws2811_led_t * out, void *v)
+{
+	int x;
+	int y;
+	int i = 0;
+	double val;
+	int modx;
+	int offset = modulo(rotateStart/rotateNum  , width);
+	double dtr = offset/width * 2 * PI;
+	double dtg = offset/width * 2 * PI /2.0;
+	double dtb = offset/width * 2 * PI /3.0;
+
+	double red = (sin(dtr)+1)*127;
+	double green = (sin(dtg)+1)*127;
+	double blue = (sin(dtg)+1)*127;
+
+	setLed(in,offset,(int)red, (int)green, (int)blue);
+
+	for (x = 0; x < width; x++)
+	{
+		modx = modulo(x + rotateStart/rotateNum  , width);
+
+		for (y = 0; y < height; y++)
+		{
+			out[y * width + x] = in[y * width + modx];
+		}
+	}
+
+	rotateStart += rotateDirection;
+
+	return 0;
+}
+
+void startRotateRandom(int clockwise)
+{
+modifier = rotateRandom;
+rotateDirection = clockwise ? 1:-1;
+}
+
+
+
 int throbStart = 0;
 int throbVal  = 16;
 
@@ -500,6 +549,7 @@ modifier = throb;
 throbVal  = time;
 }
 
+static int IsOn = 0;
 
  void IrReceive(int address, int value, uint32_t tick, bool isRepeat, void * userData)
  {
@@ -515,6 +565,9 @@ throbVal  = time;
 	 case 0x00ba45:
 		 if (!isRepeat)
 		 {
+			 modifier = NULL;
+		if (!IsOn)
+		{
 		 for (x = 0; x < width; x++)
 		 {
 			 for (y = 0; y < height; y++)
@@ -522,6 +575,20 @@ throbVal  = time;
 				 matrix[y * width + x] = white;
 			 }
 		 }
+		 IsOn = true;
+		}
+		else
+		{
+			 for (x = 0; x < width; x++)
+			 {
+				 for (y = 0; y < height; y++)
+				 {
+					 matrix[y * width + x] = black;
+				 }
+			 }
+			 IsOn = false;
+
+		}
 		 }
 		 break;
 
@@ -559,16 +626,7 @@ throbVal  = time;
 		// column2
 
 	 case 0x00b946:
-		 if (!isRepeat)
-		 {
-		 for (x = 0; x < width; x++)
-		 {
-			 for (y = 0; y < height; y++)
-			 {
-				 matrix[y * width + x] = black;
-			 }
-		 }
-		 }
+		 addColour(step,step,step);
 		 break;
 
 	 case 0x00bf40:
@@ -583,12 +641,19 @@ throbVal  = time;
 		 startRotate(1==1);
 		 break;
 	 case 0x00e718:
+		 startRotateRandom(1==1);
+		 break;
+
 	 case 0x00e31c:
+		 startRotateRandom(1==0);
+		 break;
+
 	 case 0x00ad52:
 		 break;
 
 		 // column 3
 	 case 0x00b847:
+		 addColour(-step,-step,-step);
 		 break;
 
 	 case 0x00bc43:
@@ -659,9 +724,7 @@ int main(int argc, char *argv[])
     		matrix_render(modifiedMatrix);
     	}
 
-    	local_irq_disable();
     	ret = ws2811_render(&ledstring);
-    	local_irq_enable();
 
         if (ret != WS2811_SUCCESS)
         {
