@@ -344,7 +344,9 @@ void parseargs(int argc, char **argv, ws2811_t *ws2811)
 
 void setLed(ws2811_led_t * in,int offset, int red, int green, int blue)
 {
-	in[offset] = RGB_VAL(MAX(MIN((int)(BLUE(blue)),255),0),MAX(MIN((int)(RED(red)),255),0),MAX(MIN((int)(GREEN(green)),255),0));
+	in[offset] = RGB_VAL(MAX(MIN((int)(blue),255),0),
+		MAX(MIN((int)(red),255),0),
+		MAX(MIN((int)(green),255),0));
 }
 
 
@@ -471,6 +473,7 @@ void startRotate(int clockwise)
 {
 modifier = rotate;
 rotateDirection = clockwise ? 1:-1;
+rotateNum = 1;
 }
 
 
@@ -483,13 +486,15 @@ int rotateRandom(ws2811_led_t * in, ws2811_led_t * out, void *v)
 	double val;
 	int modx;
 	int offset = modulo(rotateStart/rotateNum  , width);
-	double dtr = offset/width * 2 * PI;
-	double dtg = offset/width * 2 * PI /2.0;
-	double dtb = offset/width * 2 * PI /3.0;
+	double dtr = (offset * 2 * PI)/width;
+	double dtg = (offset * 2* 2 * PI) /(width);
+	double dtb = (offset * 2 *3* PI) /(width);
 
 	double red = (sin(dtr)+1)*127;
 	double green = (sin(dtg)+1)*127;
-	double blue = (sin(dtg)+1)*127;
+	double blue = (sin(dtb)+1)*127;
+
+//	printf("Red %f, Green %f , Blue %f\n",red, green, blue);
 
 	setLed(in,offset,(int)red, (int)green, (int)blue);
 
@@ -512,6 +517,7 @@ void startRotateRandom(int clockwise)
 {
 modifier = rotateRandom;
 rotateDirection = clockwise ? 1:-1;
+rotateNum = 1;
 }
 
 
@@ -729,13 +735,13 @@ int main(int argc, char *argv[])
         if (ret != WS2811_SUCCESS)
         {
             fprintf(stderr, "ws2811_render failed: %s\n", ws2811_get_return_t_str(ret));
-            local_irq_disable();
+//            local_irq_disable();
             break;
         }
     	sem_post (&semaphore);
 
         // 15 frames /sec
-        usleep(1000000 / 15);
+        usleep(1000000 / 50);
     }
 
     if (clear_on_exit)
