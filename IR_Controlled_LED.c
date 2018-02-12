@@ -78,7 +78,7 @@ sem_t semaphore;
 #define DMA                     10
 #define STRIP_TYPE              WS2811_STRIP_GBR
 
-#define WIDTH                   237
+#define WIDTH                   272
 #define HEIGHT                  1
 #define LED_COUNT               (WIDTH * HEIGHT)
 #define IR_PORT 				17
@@ -97,7 +97,7 @@ lightblue = 		    0x00000202,  // lightblue
 blue = 		    0x00000002,  // blue
 purple = 		    0x00010001,  // purple
 pink = 		    0x00020001,  // pink
-white =  0x00202020,
+white =  0x00404040,
 black =  0x00000000
 };
 
@@ -523,7 +523,7 @@ rotateNum = 1;
 
 
 int throbStart = 0;
-int throbVal  = 16;
+int throbVal  = 128;
 
 
 int throb(ws2811_led_t * in, ws2811_led_t * out, void *v)
@@ -561,7 +561,7 @@ static int IsOn = 0;
  {
 	 int x;
 	 int y;
-	 int step = 2;
+	 int step = 4;
 
 	 sem_wait(&semaphore);
 
@@ -593,17 +593,18 @@ static int IsOn = 0;
 				 }
 			 }
 			 IsOn = false;
-
 		}
 		 }
 		 break;
 
 	 case 0x00bb44:
 		 addColour(step,0,0);
+		 IsOn = true;
 		 break;
 
 
 	 case 0x00f807:
+		 IsOn = true;
 		 addColour(-step,0,0);
 		 break;
 
@@ -617,25 +618,30 @@ static int IsOn = 0;
 	 case 0x00f30c:
 		 if (!isRepeat)
 		 {
+			 IsOn = true;
 			 startThrob(16);
 		 }
 		break;
 
 	 case 0x00f708:
+		 IsOn = true;
 		 startSwipe(1==1);
 		 break;
 
 	 case 0x00bd42:
+		 IsOn = true;
 		 startSwipe(1==0);
 		 break;
 
 		// column2
 
 	 case 0x00b946:
+		 IsOn = true;
 		 addColour(step,step,step);
 		 break;
 
 	 case 0x00bf40:
+		 IsOn = true;
 		 addColour(0,step,0);
 		 break;
 
@@ -644,13 +650,16 @@ static int IsOn = 0;
 		 break;
 
 	 case 0x00e619:
+		 IsOn = true;
 		 startRotate(1==1);
 		 break;
 	 case 0x00e718:
+		 IsOn = true;
 		 startRotateRandom(1==1);
 		 break;
 
 	 case 0x00e31c:
+		 IsOn = true;
 		 startRotateRandom(1==0);
 		 break;
 
@@ -663,6 +672,7 @@ static int IsOn = 0;
 		 break;
 
 	 case 0x00bc43:
+		 IsOn = true;
 		 addColour(0,0,step);
 		 break;
 
@@ -671,6 +681,7 @@ static int IsOn = 0;
 		 break;
 
 	 case 0x00f20d:
+		 IsOn = true;
 		 startRotate(1==0);
 		 break;
 
@@ -735,12 +746,11 @@ int main(int argc, char *argv[])
         if (ret != WS2811_SUCCESS)
         {
             fprintf(stderr, "ws2811_render failed: %s\n", ws2811_get_return_t_str(ret));
-//            local_irq_disable();
             break;
         }
     	sem_post (&semaphore);
 
-        // 15 frames /sec
+        // 50 frames /sec
         usleep(1000000 / 50);
     }
 
